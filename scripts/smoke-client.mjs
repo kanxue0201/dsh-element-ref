@@ -554,7 +554,17 @@ toolbarRow.appendChild(fakeElement('button'))
 toolbarRow.appendChild(addressBox)
 addressBox.appendChild(addressInput)
 toolbarRow.appendChild(externalTool)
-toolbarRow.querySelector = (selector) => (String(selector).indexOf('input') !== -1 ? addressInput : null)
+toolbarRow.querySelector = (selector) => {
+  const sel = String(selector)
+  if (sel.indexOf('addressBox') !== -1) return addressBox
+  return sel.indexOf('input') !== -1 ? addressInput : null
+}
+
+// 定时任务页那种工具条：同样带 toolbar 类名和一个搜索框，但不是地址行。
+const searchRow = fakeElement('form')
+const searchInput = fakeElement('input')
+searchRow.appendChild(searchInput)
+searchRow.querySelector = (selector) => (String(selector).indexOf('input') !== -1 ? searchInput : null)
 
 globalThis.document = {
   body: bodyElement,
@@ -562,7 +572,7 @@ globalThis.document = {
   createElementNS: (_namespace, tag) => fakeElement(tag),
   querySelectorAll: (selector) => {
     const text = String(selector)
-    if (text.indexOf('toolbar') !== -1) return [toolbarRow]
+    if (text.indexOf('toolbar') !== -1) return [searchRow, toolbarRow]
     // The chip row asks which composer is on screen; one card is mounted here.
     if (text.indexOf('data-composer-card') !== -1) return [composerCard]
     if (text.indexOf('data-element-ref="seat"') !== -1) return []
@@ -590,6 +600,15 @@ const pickButton = toolbarRow.children.find(
   (node) => node.tagName === 'button' && node.getAttribute('data-element-ref') === 'toolbar',
 )
 check(pickButton !== undefined, 'toolbar icon mounts inside the address row')
+check(
+  searchRow.children.every((node) => node.getAttribute('data-element-ref') !== 'toolbar'),
+  'a toolbar without an address box keeps no icon',
+)
+check(
+  [...source.matchAll(/function detachStrayButtons\(\)/g)].length === 1 &&
+    source.includes('row.querySelector(\'[class*="addressBox"]\')'),
+  'the stray icon gets swept',
+)
 check(
   pickButton !== undefined && pickButton.parentNode === toolbarRow,
   'toolbar icon is a child of the row, not a body overlay',
