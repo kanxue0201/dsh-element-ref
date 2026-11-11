@@ -27,6 +27,9 @@ function makeStyle() {
     removeProperty(name) {
       delete store[name]
     },
+    getPropertyValue(name) {
+      return store[name] === undefined ? '' : String(store[name])
+    },
     _store: store,
   }
   return new Proxy(api, {
@@ -364,24 +367,54 @@ check(panelComment.value === '这几行字再大一点', 'the panel comment mirr
 panelComment.value = '这几行字再大一点，顺便换个颜色'
 fire(panelComment, 'input', { target: panelComment })
 check(commentInput.value === '这几行字再大一点，顺便换个颜色', 'editing in the panel writes back to the pill', String(commentInput.value))
-const rows = nodes().filter((node) => String(node.className || '') === 'row')
-check(rows.length === 14, 'the panel lists every basic control', String(rows.length))
+const rows = nodes().filter((node) => String(node.className || '').indexOf('row') === 0)
+check(rows.length === 12, 'the panel lists every basic control', String(rows.length))
 const labels = rows.map((row) => row.children[0].textContent)
-for (const label of ['文本', '文本颜色', '背景', 'Opacity', '字体', '字号', '字重', '边框圆角', '边框颜色', '边框宽度', '宽度', '高度', '内边距', '外边距']) {
+for (const label of ['文本', '文本颜色', '背景', 'Opacity', '字体', '字号', '字重', '边框圆角', '边框颜色', '边框宽度', '宽度', '高度']) {
   check(labels.includes(label), `panel row: ${label}`)
 }
 
 const colorRow = rows.find((row) => row.children[0].textContent === '文本颜色')
-const colorInput = colorRow.children[1].children[0]
+const colorInput = colorRow.children[1].children[0].children[1]
 colorInput.value = '#ff0000'
 fire(colorInput, 'input', { target: colorInput })
 check(paragraph.style._store.color === '#ff0000', 'a panel edit previews on the page', paragraph.style._store.color)
 
 const radiusRow = rows.find((row) => row.children[0].textContent === '边框圆角')
-const radiusInput = radiusRow.children[1].children[0]
+const radiusInput = radiusRow.children[1].children[0].children[0]
 radiusInput.value = '12'
 fire(radiusInput, 'input', { target: radiusInput })
 check(paragraph.style._store['border-radius'] === '12px', 'length edits get px', paragraph.style._store['border-radius'])
+// Undo: the row only grows a revert button after it changes, and pressing it puts the page's
+// own value back instead of leaving a zero behind.
+const radiusCtl = radiusRow.children[1]
+const undoBtn = radiusCtl.children[radiusCtl.children.length - 1]
+check(String(undoBtn.className) === 'undoBtn', 'each field ends with an undo button')
+check(undoBtn.style.display === 'flex', 'undo shows up once the field changed', String(undoBtn.style.display))
+fire(undoBtn, 'click')
+check(paragraph.style._store['border-radius'] === undefined, 'undo puts the page value back', String(paragraph.style._store['border-radius']))
+check(radiusInput.value === '0', 'undo restores the number too', radiusInput.value)
+check(undoBtn.style.display === 'none', 'undo hides again after reverting', String(undoBtn.style.display))
+// 内边距 / 外边距：四个框各带一个撤销，只在该边被改过时出现。
+const padGroup = nodes().filter((node) => String(node.className || '').indexOf('sidesGroup') === 0)[0]
+check(!!padGroup, 'the panel carries the padding group')
+const padBody = padGroup.children[1]
+const firstPair = padBody.children[0]
+const padFields = firstPair.children[2]
+const padBox = padFields.children[0]
+const padUndo = padBox.children[padBox.children.length - 1]
+check(String(padUndo.className) === 'undoBtn', 'each side box carries an undo button')
+check(padUndo.style.display === 'none', 'an untouched side keeps it hidden', String(padUndo.style.display))
+const padInput = padBox.children[0]
+padInput.value = '24'
+fire(padInput, 'input', { target: padInput })
+check(paragraph.style._store.padding === '24px 0px 0px 0px', 'a side writes the shorthand', String(paragraph.style._store.padding))
+check(padUndo.style.display === 'flex', 'a changed side shows its undo', String(padUndo.style.display))
+fire(padUndo, 'click')
+check(paragraph.style._store.padding === undefined, 'undoing a side clears the shorthand', String(paragraph.style._store.padding))
+check(padUndo.style.display === 'none', 'the side undo hides again', String(padUndo.style.display))
+check(source.indexOf('function restorePreview') !== -1, 'folding the panel rolls the preview back')
+check(source.indexOf('restorePreview(badge)') !== -1, 'the badge folds with a rollback')
 
 fire(byText('保存')[0], 'click')
 check(panel.style.display === 'none', 'saving closes the panel')
@@ -457,15 +490,15 @@ check(byClass('trash').length === 0, 'the panel has no remove button')
 check(byText('保存')[0].style.display === 'none', 'save stays hidden while nothing has changed')
 const footButtons = byClass('btn').map((node) => node.textContent).filter(Boolean)
 check(footButtons.includes('取消') && footButtons.includes('保存'), 'the panel foot is cancel and save', JSON.stringify(footButtons))
-const cancelRows = nodes().filter((node) => String(node.className || '') === 'row')
-const cancelColor = cancelRows.filter((row) => row.children[0].textContent === '文本颜色').pop().children[1].children[0]
+const cancelRows = nodes().filter((node) => String(node.className || '').indexOf('row') === 0)
+const cancelColor = cancelRows.filter((row) => row.children[0].textContent === '文本颜色').pop().children[1].children[0].children[1]
 cancelColor.value = '#00ff00'
 fire(cancelColor, 'input', { target: cancelColor })
 check(byText('保存')[0].style.display !== 'none', 'save appears once a style has changed')
 
 // Editing the text value is also a change: the save button has to come back without the
 // picker having to be re-armed.
-const textRows = nodes().filter((node) => String(node.className || '') === 'row')
+const textRows = nodes().filter((node) => String(node.className || '').indexOf('row') === 0)
 const textInput = textRows.filter((row) => row.children[0].textContent === '文本').pop().children[1].children[0]
 textInput.value = 'Elia 2'
 fire(textInput, 'input', { target: textInput })
@@ -501,6 +534,10 @@ check(source.includes('refs: marks.map'), 'the picker reports which row each pin
 // --- opening the colour popover is read-only (source contract) -----------------------
 check(source.includes('paint(false)'), 'opening the colour popover paints without committing')
 check(source.includes('if (commit !== false) onPick(picked)'), 'only a real pick rewrites the colour field')
+check(!source.includes('onPick(item.value)'), 'menu rows do not share one captured value')
+check(source.includes('seedOf(mark, prop, computedValue)'), 'undo goes back to the page value seen on first open')
+check(source.includes('mark.seed = null'), 're-targeting an element forgets the old page values')
+check(source.includes('})(item.value)'), 'menu rows close over their own value')
 
 // --- Escape leaves the page as it was -----------------------------------------------
 const keyEscape = { key: 'Escape' }

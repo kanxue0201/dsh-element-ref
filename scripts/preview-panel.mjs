@@ -62,19 +62,47 @@ function hexOf(hsv) {
 
 const row = (label, control) => `<div class="row"><span class="lbl">${label}</span>${control}</div>`
 const textCtl = (value) => `<div class="ctl"><input class="inp" value="${value}"></div>`
-const lengthCtl = (value) => `<div class="ctl"><input class="inp" value="${value}"><span class="unit">px</span></div>`
+const lengthCtl = (value) =>
+  `<div class="ctl short"><div class="numBox"><input class="inp" type="number" value="${value}"><span class="unitIn">px</span></div></div>`
 const colorCtl = (value, color) =>
-  `<div class="ctl"><input class="inp" value="${value}"><button class="swatch"><span class="swatchdot" style="background:${color}"></span></button></div>`
+  `<div class="ctl short wide"><div class="colorBox"><button class="swatch"><span class="swatchdot" style="background:${color}"></span></button><input class="inp" value="${value}"></div></div>`
 const colorCtlEmpty = (value) =>
-  `<div class="ctl"><input class="inp" value="${value}"><button class="swatch"><span class="swatchdot empty"></span></button></div>`
-const selectCtl = (value, open) =>
-  `<div class="ctl"><button class="inp pick${open ? ' open' : ''}"><span class="pick-text">${value}</span><span class="pick-caret">` +
+  `<div class="ctl short wide"><div class="colorBox"><button class="swatch"><span class="swatchdot empty"></span></button><input class="inp" value="${value}"></div></div>`
+const selectCtl = (value, open, narrow) =>
+  `<div class="ctl${narrow ? ' short pickShort' : ''}"><button class="inp pick${open ? ' open' : ''}"><span class="pick-text">${value}</span><span class="pick-caret">` +
   `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>` +
   `</span></button></div>`
-const sidesCtl = () =>
-  `<div class="ctl"><div class="sides">${['0', '0', '0', '0']
-    .map((v) => `<input class="inp" value="${v}">`)
-    .join('')}</div></div>`
+const pairGlyph = (vertical) => {
+  const paths = ['M31 3V55', 'M31 3H8', 'M31 55H8']
+  return (
+    `<svg viewBox="0 0 44 58" width="44" height="58" preserveAspectRatio="none" fill="none" stroke-linecap="round" stroke-linejoin="round">` +
+    paths.map((d) => `<path d="${d}" stroke="#b9c3d0" stroke-width="2"/>`).join('') +
+    '</svg>'
+  )
+}
+const lockIcon =
+  '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M9.2 14.8l5.6-5.6M8.4 11.6l-1.1 1.1a3.4 3.4 0 0 0 4.8 4.8l1.1-1.1M15.6 12.4l1.1-1.1a3.4 3.4 0 0 0-4.8-4.8l-1.1 1.1"/></svg>'
+const sidePair = (names, values, vertical, on) => `
+  <div class="sidePair">
+    <div class="names">${names.map((name) => `<span>${name}</span>`).join('')}</div>
+    <div class="glyphCol">${pairGlyph(vertical)}<button class="sideLock${on ? ' on' : ''}">${lockIcon}</button></div>
+    <div class="fields">${values.map((value) => `<div class="numBox"><input class="inp" type="number" value="${value}"><span class="unitIn">px</span></div>`).join('')}</div>
+    
+  </div>`
+const sidesGroup = (label, values, closed) => `
+<div class="sidesGroup${closed ? ' closed' : ''}">
+  <div class="sidesLine">
+    <div class="sidesHead"><span>${label}</span>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+    </div>
+    <div class="sidesCollapsed"><div class="sideCells">${values.map((value) => `<div class="sideCell"><input class="inp" type="number" value="${value}"></div>`).join('')}</div></div>
+  </div>
+  <div class="sidesBody">
+    ${sidePair(['上', '底部'], [values[0], values[1]], true, false)}
+    ${sidePair(['左', '右'], [values[2], values[3]], false, true)}
+  </div>
+</div>`
 
 const panel = `
 <div class="panel shown">
@@ -84,17 +112,17 @@ const panel = `
     ${row('文本', textCtl('Elia'))}
     ${row('文本颜色', colorCtl('rgb(0, 0, 0)', '#000000'))}
     ${row('背景', colorCtlEmpty('rgba(0, 0, 0, 0)'))}
-    ${row('Opacity', textCtl('1'))}
+    ${row('Opacity', `<div class="ctl short"><div class="numBox"><input class="inp" value="1"></div></div>`)}
     ${row('字体', selectCtl('当前（system-ui, -apple-system）', true))}
     ${row('字号', lengthCtl('52'))}
-    ${row('字重', selectCtl('700 粗'))}
+    ${row('字重', selectCtl('700 粗', false, true))}
     ${row('边框圆角', lengthCtl('0'))}
     ${row('边框颜色', colorCtl('rgb(0, 0, 0)', '#000000'))}
     ${row('边框宽度', lengthCtl('0'))}
     ${row('宽度', lengthCtl('auto'))}
     ${row('高度', lengthCtl('auto'))}
-    ${row('内边距', sidesCtl())}
-    ${row('外边距', sidesCtl())}
+    ${sidesGroup('内边距', ['18', '0', '0', '0'])}
+    ${sidesGroup('外边距', ['0', '0', '0', '0'], true)}
   </div>
   <div class="pfoot"><button class="btn">取消</button><button class="btn dark">保存</button></div>
 </div>`
@@ -121,7 +149,7 @@ const menuItems = ['系统默认', '无衬线 UI', '中文黑体', '衬线', '�
   .map((name, index) =>
     `<button class="menu-item${index === 1 ? ' on' : ''}"><span class="menu-text">${name}</span>` +
     (index === 1
-      ? `<span class="menu-tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`
+      ? `<span class="menu-tick"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`
       : '') +
     `</button>`,
   )
@@ -161,6 +189,14 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <title>批注面板 · 圆润化预览</title>
+<style>
+  .pscroll > .row:nth-child(2),
+  .pscroll > .row:nth-child(5),
+  .pscroll > .row:nth-child(8),
+  .pscroll > .row:nth-child(11) { border-top: 1px solid rgba(17,24,39,.07); padding-top: 9px; margin-top: 2px; }
+  .panel.shown { max-height: none; }
+  .pscroll { overflow: visible; max-height: none; }
+</style>
 <style>
   html, body { margin: 0; background: #eef1f6; }
   body {
@@ -217,13 +253,43 @@ const html = `<!doctype html>
 
 writeFileSync(join(root, 'preview/panel.html'), html, 'utf8')
 
+// ------------------------------------------------------------------ four-box rows close-up
+const sidesPage = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>内边距 / 外边距 · 四格输入</title>
+<style>
+  html, body { margin: 0; background: #eef1f6; }
+  body { padding: 24px 26px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .caption { margin: 0 0 10px; font-size: 13px; color: #6b7280; }
+  .panel.shown { display: block; position: relative; left: auto; top: auto; width: 320px; max-height: none; }
+  .pscroll { max-height: none; overflow: visible; }
+  ${css}
+</style>
+</head>
+<body class="dsh-root">
+<p class="caption">内边距 / 外边距：一侧一行，四个数字各占一整行，浏览器自带的上下箭头有位置放；外边距默认折叠</p>
+<div class="panel shown">
+  <div class="phead"><span class="pnum">1</span><span class="ptag">h1 · #hero-name</span></div>
+  <div class="pscroll" style="padding-top:10px">
+    ${sidesGroup('内边距', ['18', '0', '0', '0'])}
+    ${sidesGroup('外边距', ['0', '0', '0', '0'], true)}
+    ${row('边框宽度', lengthCtl('0'))}
+  </div>
+</div>
+</body>
+</html>`
+
+writeFileSync(join(root, 'preview/sides.html'), sidesPage, 'utf8')
+
 // ------------------------------------------------------------------ before / after strip
 const card = (fontCtl, tone) => `
 <div class="panel shown ${tone}">
   <div class="phead"><span class="pnum">1</span><span class="ptag">h1 · #hero-name</span></div>
   <div class="pscroll" style="padding-top:10px">
     ${row('字体', fontCtl)}
-    ${row('字重', tone === 'before' ? '<div class="ctl"><select class="inp"><option>700 粗</option><option>600 半粗</option><option>500 中</option></select></div>' : selectCtl('700 粗'))}
+    ${row('字重', tone === 'before' ? '<div class="ctl"><select class="inp"><option>700 粗</option><option>600 半粗</option><option>500 中</option></select></div>' : selectCtl('700 粗', false, true))}
     ${row('文本颜色', colorCtl('rgb(0, 0, 0)', '#000000'))}
   </div>
 </div>`

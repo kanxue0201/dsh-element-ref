@@ -214,7 +214,7 @@ check(source.includes('clearPageMarks'), 'the dock close both tells the host and
 // The address-row icon is the switch: pressing it must never start a round, so the direction of
 // a click comes from our own state and turning off disarms every frame.
 check(source.includes('const disarmPicker'), 'turning picking off has one named step')
-check(source.includes('if (pickWantedNow()) {'), 'the icon decides by its own state, not by probing a page')
+check(source.includes('if (here && isTabArmed(here)) {'), 'the switch asks the tab in front, not a global flag')
 check(source.includes('__DSH_ELEMENT_REF_SHARED__'), 'the picking flag is shared across module reloads')
 check(source.includes('const frames = allBrowserFrames()'), 'disarming reaches every sidebar tab')
 check(!source.includes('injectPicker(stale'), 'a stale picker is destroyed, never replaced')
@@ -243,6 +243,18 @@ check(source.includes('const order = prefix ? prefix[1] : (/^\\d+$/.test(refId) 
 check(source.includes('capturePage({'), 'the crop comes from the webview itself')
 check(source.includes("const SHOT_TAGS = { img: 1, svg: 1, canvas: 1 }"), 'only pictures are photographed')
 check(source.includes('if (!rect || rect.width < 4 || rect.height < 4)'), 'a zero-size element is not photographed')
+// 切标签页 ≠ 用户走开了：每个标签页各记一份开关。切走时图标变灰但脚本与标号留着，
+// 切回来恢复；只有「被开着的那一页自己刷新」才作废那一轮。
+check(source.includes('const followTabs = () => {'), 'the switch follows the visible browser tab')
+check(source.includes('const on = isTabArmed(frame)'), 'each tab keeps its own switch')
+check(source.includes("beacon('arm', { path: 'tab-return' })"), 'coming back to an armed tab restores the switch')
+check(source.includes('if (isTabArmed(frame)) closeOnPageLoad'), 'only a reload of the armed tab ends its round')
+check(source.includes('function keepArmedTabsAlive'), 'a tab left behind keeps its heartbeat')
+check(source.includes("closeOnPageLoad('page-gone', frame)"), 'a page that lost its picker ends its own round')
+check(source.includes("closeOnPageLoad('did-finish-load', frame)"), 'a reload ends the round before anything else')
+check(source.includes("beacon('reload-off', { reason })"), 'the reload path is logged so it can be told apart from a misfire')
+check(source.includes('if (version === 0) return'), 'a bare page is never silently upgraded back into picking')
+check(source.includes('setTabArmed(frame, false)'), 'a reload switches off only the tab that reloaded')
 
 const renderedPortals = []
 const plugin = loaded.factory((id) => {
