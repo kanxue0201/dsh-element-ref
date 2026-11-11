@@ -334,6 +334,8 @@ check(clientSource.includes("actions.setDraft(cards + (typed ? CARD_BREAK + type
 check(!clientSource.includes('defaultLead'), 'the auto-written prompt is gone')
 check(!clientSource.includes('按这条批注改'), 'the canned sentence is gone')
 check(clientSource.includes('async function discardItem'), 'a chip can be dropped on its own')
+check(clientSource.includes('const dropAbandonedRound = async () =>'), 'stopping the picker can end an unsent round')
+check(clientSource.includes("beacon('round-dropped'"), 'an abandoned round is reported')
 check(clientSource.includes("'data-element-ref': 'dock-kill'"), 'the chip shows a × on hover')
 check(clientSource.includes("title: '取消这次修改'"), 'the × says what it does')
 
