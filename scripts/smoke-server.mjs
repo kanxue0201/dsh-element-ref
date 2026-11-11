@@ -65,7 +65,7 @@ check(JSON.stringify(inject) === '["webServer","tools"]', 'injects webServer and
 const tool = tools.get('element_ref_details')
 check(tool !== undefined, 'registers the details tool')
 check(tool && typeof tool.execute === 'function' && typeof tool.output.render === 'function', 'the tool executes and renders')
-const ROUTES = ['picker.js', 'collect', 'draft', 'items', 'update', 'command', 'commands', 'restore', 'delete', 'clear', 'consume', 'debug', 'shot']
+const ROUTES = ['picker.js', 'collect', 'draft', 'items', 'update', 'command', 'commands', 'restore', 'delete', 'clear', 'consume', 'purge', 'debug', 'shot']
 check(
   ROUTES.every((name) => routes.has(`/element-ref/${name}`)) && routes.size === ROUTES.length,
   'every route registered',
@@ -245,6 +245,26 @@ check(
   afterConsume.items.length === 1 && afterConsume.items[0].spent === true,
   'a consumed row stays readable but is flagged spent',
   JSON.stringify(afterConsume.items),
+)
+
+// A brand-new task has no id yet, so its picks share one bucket; once the task is named those rows
+// must leave /items entirely — the agent tool lists them, and they are no longer the user's work.
+await fetch(`${base}/element-ref/collect`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ ...descriptor, session: 'new-task' }),
+})
+const purged = await (await fetch(`${base}/element-ref/purge`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ session: 'new-task' }),
+})).json()
+const afterPurge = await (await fetch(`${base}/element-ref/items`)).json()
+check(purged.dropped === 1, 'purge drops the unnamed task bucket', JSON.stringify(purged))
+check(
+  afterPurge.items.every((row) => row.session !== 'new-task'),
+  'nothing named new-task survives a purge',
+  JSON.stringify(afterPurge.items.map((row) => row.session)),
 )
 
 // A picked picture has no pixels in the markup, so the sidebar posts a PNG and the row carries the
