@@ -326,7 +326,7 @@ check(clientSource.includes("return legacySession !== '' && me === legacySession
 check(clientSource.includes("const NEW_TASK_KEY = 'new-task'"), 'a task without an id gets its own bucket instead of borrowing the last one')
 check(clientSource.includes('if (!sessionId && actions) loose.actions = actions'), 'an unnamed composer still hands the send path its face')
 check(clientSource.includes('if (key === \'new-task\' && loose.actions) return loose.actions'), 'the unnamed bucket sends through the loose composer')
-check(clientSource.includes("postJson('/purge'"), 'the unnamed bucket is dropped once the task gets a real id')
+check(clientSource.includes("postJson('/reassign', { from: NEW_TASK_KEY, to: sid })"), 'the unnamed bucket is re-homed once the task gets a real id')
 check(clientSource.includes('function fillEditable(items)'), 'the hero composer is driven through its editor')
 check(clientSource.includes("document.execCommand('insertText', false, text)"), 'the markers are typed like a keystroke, so the editor keeps them')
 check(clientSource.includes("why: 'dom-fill'"), 'the DOM fallback reports itself')

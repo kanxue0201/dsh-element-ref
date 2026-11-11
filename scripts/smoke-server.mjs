@@ -65,7 +65,7 @@ check(JSON.stringify(inject) === '["webServer","tools"]', 'injects webServer and
 const tool = tools.get('element_ref_details')
 check(tool !== undefined, 'registers the details tool')
 check(tool && typeof tool.execute === 'function' && typeof tool.output.render === 'function', 'the tool executes and renders')
-const ROUTES = ['picker.js', 'collect', 'draft', 'items', 'update', 'command', 'commands', 'restore', 'delete', 'clear', 'consume', 'purge', 'debug', 'shot']
+const ROUTES = ['picker.js', 'collect', 'draft', 'items', 'update', 'command', 'commands', 'restore', 'delete', 'clear', 'consume', 'purge', 'reassign', 'debug', 'shot']
 check(
   ROUTES.every((name) => routes.has(`/element-ref/${name}`)) && routes.size === ROUTES.length,
   'every route registered',
@@ -281,6 +281,35 @@ check(withShot.items[0].screenshot === shotRes.path, 'the row carries its screen
 const details = await tools.get('element_ref_details').execute({})
 const shotName = shotRes.path.split(/[\\/]/).pop()
 check(details.text.includes(shotName), 'the model-facing tool hands over the screenshot path', details.text.slice(0, 200))
+
+// A pick lives in `drafts` until it is consumed. Consuming used to delete that only copy, so the
+// agent tool answered "[]" for a message the user had just sent. The row must survive as spent.
+await fetch(`${base}/element-ref/clear`, { method: 'POST', body: '{}' })
+await fetch(`${base}/element-ref/draft`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ ...descriptor, draftId: 'smoke-draft-1', selector: '#draft-target', comment: '只发草稿这一条' }),
+})
+const draftRows = await (await fetch(`${base}/element-ref/items`)).json()
+const draftRef = draftRows.items[0].ref
+await fetch(`${base}/element-ref/consume`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ refs: [draftRef] }),
+})
+const afterDraftConsume = await (await fetch(`${base}/element-ref/items`)).json()
+const movedRow = afterDraftConsume.items.find((row) => row.ref === draftRef)
+check(
+  movedRow !== undefined && movedRow.spent === true && movedRow.selector === '#draft-target',
+  'a consumed draft becomes a spent row the tool can still read',
+  JSON.stringify(afterDraftConsume.items),
+)
+const draftDetails = await tools.get('element_ref_details').execute({})
+check(
+  draftDetails.text.includes('#draft-target'),
+  'the tool still answers for a draft the user just sent',
+  draftDetails.text.slice(0, 200),
+)
 
 const missing = await fetch(`${base}/element-ref/nothing`)
 check(missing.status === 404, 'unknown path stays unhandled', missing.status)
