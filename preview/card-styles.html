@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>批注卡片样式候选</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --bubble: #ffffff;
+    --line: rgba(17,24,39,.10);
+    --ink: #111827;
+    --ink-2: #6b7280;
+    --accent: #2f6bff;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --ui: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 34px 30px 44px; background: var(--bg); color: var(--ink); font-family: var(--ui); }
+  h1 { font-size: 15px; margin: 0 0 4px; }
+  .sub { color: var(--ink-2); font-size: 12px; margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px; max-width: 940px; }
+  .cell { }
+  .label { font-size: 12px; color: var(--ink-2); margin: 0 0 8px 2px; letter-spacing: .02em; }
+  .bubble {
+    background: var(--bubble); border-radius: 16px; padding: 12px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.05), 0 0 0 1px rgba(16,24,40,.04);
+  }
+  .said { margin: 10px 2px 0; font-size: 14px; line-height: 1.6; }
+
+  /* ---------- A：细边浅底（当前，收敛一版） ---------- */
+  .a-card {
+    display: block; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--line); background: #fafbfc;
+  }
+  .a-head { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .a-ask { margin-top: 3px; font-size: 13.5px; line-height: 1.5; }
+
+  /* ---------- B：左侧强调条，不要外框 ---------- */
+  .b-card {
+    display: block; padding: 2px 0 2px 12px; border-left: 2.5px solid rgba(17,24,39,.18);
+  }
+  .b-head { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .b-ask { margin-top: 2px; font-size: 13.5px; line-height: 1.5; }
+
+  /* ---------- C：单行 chip，带序号徽标 ---------- */
+  .c-card {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px;
+    border-radius: 999px; background: rgba(47,107,255,.07); border: 1px solid rgba(47,107,255,.14);
+  }
+  .c-badge {
+    flex: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+    background: var(--accent); color: #fff; font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .c-tag { font-family: var(--mono); font-size: 11.5px; color: #1f4bd8; flex: none; }
+  .c-ask { font-size: 13px; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c-meta { flex: none; font-size: 11.5px; color: var(--ink-2); }
+
+  /* ---------- D：堆叠多张 + 紧凑行 ---------- */
+  .d-card {
+    display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; border-radius: 12px;
+    background: #fafbfc; border: 1px solid var(--line);
+  }
+  .d-card + .d-card { margin-top: 6px; }
+  .d-badge { flex: none; width: 18px; height: 18px; border-radius: 6px; background: #eef2ff; color: #3b5bdb; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; align-self: center; }
+  .d-body { min-width: 0; }
+  .d-head { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-ask { font-size: 13px; line-height: 1.45; margin-top: 1px; }
+</style>
+</head>
+<body>
+  <h1>批注卡片：四种画法</h1>
+  <div class="sub">灰底是消息气泡（app 自己的），卡片是我们画的块；四种都保证「卡片在上、你的话在下」。</div>
+  <div class="grid">
+    <div class="cell">
+      <div class="label">A · 细边浅底（现在这版，收紧间距）</div>
+      <div class="bubble">
+        <div class="a-card">
+          <div class="a-head">&lt;h1&gt; 文本 “Elia”</div>
+          <div class="a-ask">我的要求：字体变大</div>
+        </div>
+        <div class="said">字体变粗</div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="label">B · 左侧竖条，无外框（更像引用，最轻）</div>
+      <div class="bubble">
+        <div class="b-card">
+          <div class="b-head">&lt;h1&gt; 文本 “Elia”</div>
+          <div class="b-ask">我的要求：字体变大</div>
+        </div>
+        <div class="said">字体变粗</div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="label">C · 单行胶囊，带序号</div>
+      <div class="bubble">
+        <div class="c-card">
+          <span class="c-badge">1</span>
+          <span class="c-tag">&lt;h1&gt;</span>
+          <span class="c-ask">我的要求：字体变大</span>
+          <span class="c-meta">“Elia”</span>
+        </div>
+        <div class="said">字体变粗</div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="label">D · 两行紧凑，多张时堆叠</div>
+      <div class="bubble">
+        <div class="d-card">
+          <span class="d-badge">1</span>
+          <div class="d-body">
+            <div class="d-head">&lt;h1&gt; 文本 “Elia”</div>
+            <div class="d-ask">我的要求：字体变大</div>
+          </div>
+        </div>
+        <div class="d-card">
+          <span class="d-badge">2</span>
+          <div class="d-body">
+            <div class="d-head">&lt;p&gt; 软件工程 · 本科在读</div>
+            <div class="d-ask">改成一行，别换行</div>
+          </div>
+        </div>
+        <div class="said">两张一起改</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

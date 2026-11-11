@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DSH 右栏地址行 · 常驻拾取按钮</title>
+<link rel="stylesheet" href="./toolbar.css" />
+<style>
+  /* DSH 的 alias token：这里给一套浅色近似值，只为把真实 CSS 渲染出来 */
+  :root {
+    --dsw-alias-bg-base: #ffffff;
+    --dsw-alias-bg-layer-1: #f4f5f7;
+    --dsw-alias-bg-layer-2: #eceef1;
+    --dsw-alias-bg-layer-3: #e3e6ea;
+    --dsw-alias-label-primary: #1b1f24;
+    --dsw-alias-label-secondary: #62676e;
+    --dsw-alias-label-tertiary: #8b9098;
+    --dsw-alias-label-quaternary: #b6bac1;
+    --dsw-alias-border-l2: #e3e5e9;
+    --dsw-alias-border-l3: #eceef1;
+    --dsw-alias-interactive-bg-hover: #f0f1f4;
+    --dsw-alias-state-error-primary: #e5484d;
+    --dsw-radius-sm: 6px;
+    --dsw-font-xxs-12: 12px/16px -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    --dsw-font-xxxs-11: 11px/16px -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 28px 34px;
+    background: #f2f3f5; color: #1b1f24;
+    font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  h1 { font-size: 14px; margin: 0 0 2px; }
+  .sub { color: #6b7280; margin: 0 0 20px; font-size: 12.5px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 22px; }
+  .controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3c424a; }
+
+  .panel { background: #fff; border: 1px solid #e3e5e9; border-radius: 10px; padding: 0; overflow: hidden; }
+  .panel + .panel { margin-top: 18px; }
+  .panel-cap { padding: 10px 12px 8px; font-size: 12px; color: #8b9098; letter-spacing: .2px; }
+  .panel-cap b { color: #3c424a; font-weight: 600; }
+
+  .narrow-panel { width: 360px; }
+
+  /* 只为了看得清边界，不影响布局 */
+  body.show-boxes .sb_addressBox { outline: 1px dashed #d0632a; outline-offset: 1px; }
+  body.show-boxes .er-pick { outline: 1px dashed #1a7f37; outline-offset: 0; }
+  body.show-boxes .sb_tool { outline: 1px dashed #b6bac1; }
+
+  .legend { margin-top: 8px; font-size: 12px; color: #6b7280; }
+  .legend i { font-style: normal; padding: 0 4px; border-radius: 3px; }
+  .legend .a { color: #d0632a; } .legend .b { color: #1a7f37; }
+</style>
+</head>
+<body>
+
+<h1>DSH 右栏地址行 · 常驻拾取按钮</h1>
+<p class="sub">真实 toolbar CSS（从 dsh-client-ui-sidebar-browser 抽出）+ 插件注入的按钮；按钮是行内的 flex 子项，不是 fixed 浮层。</p>
+
+<div class="controls">
+  <label><input type="checkbox" id="armed" /> 拾取态（实心蓝）</label>
+  <label><input type="checkbox" id="boxes" /> 显示边界</label>
+  <label><input type="checkbox" id="narrow" /> 窄面板 360px</label>
+</div>
+
+<div class="panel" id="wide">
+  <div class="panel-cap"><b>整宽</b> · 地址行 = [后退][前进][刷新][网址][拾取][打开↗]</div>
+  <div class="sb_toolbar" data-row></div>
+</div>
+
+<div class="panel narrow-panel" id="narrowPanel">
+  <div class="panel-cap"><b>窄面板 360px</b> · 挤压的是网址，不是按钮</div>
+  <div class="sb_toolbar" data-row></div>
+</div>
+
+<p class="legend">
+  <i class="a">网址容器</i> 与 <i class="b">拾取按钮</i> 之间没有任何重叠：网址是 <code>flex:auto;min-width:0</code>，
+  按钮 <code>flex:none;width:28px</code>，宽度由布局算出来，不靠定位猜。
+</p>
+
+<script>
+  var SVG_NS = 'http://www.w3.org/2000/svg'
+
+  function svg(d, size, stroke) {
+    var node = document.createElementNS(SVG_NS, 'svg')
+    node.setAttribute('viewBox', '0 0 24 24')
+    node.setAttribute('width', String(size || 16))
+    node.setAttribute('height', String(size || 16))
+    node.setAttribute('fill', 'none')
+    node.setAttribute('stroke', 'currentColor')
+    node.setAttribute('stroke-width', String(stroke || 2))
+    node.setAttribute('stroke-linecap', 'round')
+    node.setAttribute('stroke-linejoin', 'round')
+    node.style.width = (size || 16) + 'px'
+    node.style.height = (size || 16) + 'px'
+    node.style.flex = 'none'
+    var path = document.createElementNS(SVG_NS, 'path')
+    path.setAttribute('d', d)
+    node.appendChild(path)
+    return node
+  }
+
+  var CHEVRON_LEFT = 'M15 18l-6-6 6-6'
+  var CHEVRON_RIGHT = 'M9 6l6 6-6 6'
+  var RELOAD = 'M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6'
+  var LINK = 'M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10.3 5.63M14 11a5 5 0 0 0-7.07 0L5.5 12.43a5 5 0 0 0 7.07 7.07l1.06-1.06'
+  var RIGHT_UP = 'M8 16L16 8M9 8h7v7'
+
+  /** 与 lib/client.js 的 installPickButton 完全一致的内联样式 */
+  function pickButton() {
+    var button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'er-pick'
+    button.setAttribute('data-element-ref', 'toolbar')
+    button.setAttribute('aria-label', '点选元素')
+    button.title = '点选元素：只改这一处'
+    Object.assign(button.style, {
+      width: '28px', height: '28px', flex: 'none', padding: '0', margin: '0',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      border: '0', borderRadius: 'var(--dsw-radius-sm, 6px)',
+      background: 'transparent', color: 'var(--dsw-alias-label-secondary, #666)',
+      cursor: 'pointer',
+      transition: 'background 120ms ease, color 120ms ease, box-shadow 120ms ease',
+    })
+
+    // cursorGlyph()：三处括号 + 右下角指针
+    var glyph = document.createElementNS(SVG_NS, 'svg')
+    glyph.setAttribute('viewBox', '0 0 24 24')
+    glyph.setAttribute('width', '15')
+    glyph.setAttribute('height', '15')
+    glyph.setAttribute('fill', 'none')
+    glyph.setAttribute('stroke', 'currentColor')
+    glyph.setAttribute('stroke-width', '1.6')
+    glyph.setAttribute('stroke-linecap', 'round')
+    glyph.setAttribute('stroke-linejoin', 'round')
+    glyph.style.display = 'block'
+    glyph.style.width = '15px'
+    glyph.style.height = '15px'
+    glyph.style.flex = 'none'
+    var frame = document.createElementNS(SVG_NS, 'path')
+    frame.setAttribute('d', 'M7.2 3.8H6.4A2.6 2.6 0 0 0 3.8 6.4V7.2M16.8 3.8H17.6A2.6 2.6 0 0 1 20.2 6.4V7.2M3.8 16.8V17.6A2.6 2.6 0 0 0 6.4 20.2H7.2')
+    var pointer = document.createElementNS(SVG_NS, 'path')
+    pointer.setAttribute('d', 'M12 10.6a.4.4 0 0 1 .52-.52l8.3 3.1a.4.4 0 0 1-.05.76l-3.1.8a1.6 1.6 0 0 0-1.15 1.15l-.8 3.1a.4.4 0 0 1-.76.05z')
+    pointer.setAttribute('transform', 'translate(2 2)')
+    glyph.appendChild(frame)
+    glyph.appendChild(pointer)
+    button.appendChild(glyph)
+    return button
+  }
+
+  function row(host) {
+    var back = document.createElement('button')
+    back.type = 'button'; back.className = 'sb_tool'; back.setAttribute('aria-label', '后退')
+    back.appendChild(svg(CHEVRON_LEFT, 16, 2))
+
+    var forward = document.createElement('button')
+    forward.type = 'button'; forward.className = 'sb_tool'; forward.setAttribute('aria-label', '前进')
+    forward.appendChild(svg(CHEVRON_RIGHT, 16, 2))
+
+    var reload = document.createElement('button')
+    reload.type = 'button'; reload.className = 'sb_tool'; reload.setAttribute('aria-label', '刷新')
+    reload.appendChild(svg(RELOAD, 16, 1.8))
+
+    var box = document.createElement('div')
+    box.className = 'sb_addressBox'
+    var input = document.createElement('input')
+    input.className = 'sb_address'
+    input.value = 'https://kanxue.netlify.app/'
+    input.setAttribute('aria-label', '网址')
+    var go = document.createElement('button')
+    go.type = 'submit'; go.className = 'sb_tool sb_addressGo'; go.setAttribute('aria-label', '前往')
+    go.appendChild(svg(LINK, 15, 1.8))
+    box.appendChild(input)
+    box.appendChild(go)
+
+    var external = document.createElement('button')
+    external.type = 'button'; external.className = 'sb_tool'; external.setAttribute('aria-label', '在浏览器中打开')
+    external.appendChild(svg(RIGHT_UP, 14, 2))
+
+    host.appendChild(back)
+    host.appendChild(forward)
+    host.appendChild(reload)
+    host.appendChild(box)
+    // 插件就是插在网址容器后面、打开按钮前面
+    host.appendChild(pickButton())
+    host.appendChild(external)
+  }
+
+  document.querySelectorAll('[data-row]').forEach(row)
+
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.er-pick'))
+
+  function paint(armed) {
+    buttons.forEach(function (button) {
+      button.setAttribute('aria-pressed', armed ? 'true' : 'false')
+      button.title = armed ? '点选已开启，再点一次退出（页面里 Esc 也能退出）' : '点选元素：只改这一处'
+      button.style.background = armed ? '#1890ff' : 'transparent'
+      button.style.color = armed ? '#fff' : 'var(--dsw-alias-label-secondary, #666)'
+      button.style.boxShadow = armed ? '0 0 0 3px rgba(24,144,255,.18)' : 'none'
+    })
+  }
+
+  var hash = location.hash.slice(1)
+  var armedBox = document.getElementById('armed')
+  armedBox.checked = hash.indexOf('armed') !== -1
+  paint(armedBox.checked)
+  armedBox.addEventListener('change', function () { paint(armedBox.checked) })
+
+  document.getElementById('boxes').addEventListener('change', function (event) {
+    document.body.classList.toggle('show-boxes', event.target.checked)
+  })
+
+  document.getElementById('narrow').addEventListener('change', function (event) {
+    var wide = document.getElementById('wide')
+    wide.style.display = event.target.checked ? 'none' : ''
+  })
+
+  if (hash.indexOf('narrow') !== -1) {
+    document.getElementById('narrow').checked = true
+    document.getElementById('wide').style.display = 'none'
+  }
+  if (hash.indexOf('boxes') !== -1) {
+    document.getElementById('boxes').checked = true
+    document.body.classList.add('show-boxes')
+  }
+</script>
+</body>
+</html>

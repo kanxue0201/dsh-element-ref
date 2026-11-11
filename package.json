@@ -1,0 +1,44 @@
+{
+  "name": "dsh-element-ref",
+  "version": "0.7.29",
+  "description": "元素引用：在浏览器里点选页面元素，屏幕上的一个卡片就把这一处改动交给模型。",
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "smoke": "node scripts/smoke-server.mjs && node scripts/smoke-client.mjs && node scripts/smoke-picker.mjs"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./picker.js": "./lib/picker.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "element-picker",
+    "reference"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0-rc.2"
+  },
+  "license": "MIT"
+}
