@@ -330,6 +330,10 @@ check(clientSource.includes("postJson('/reassign', { from: NEW_TASK_KEY, to: sid
 check(clientSource.includes('function fillEditable(items)'), 'the hero composer is driven through its editor')
 check(clientSource.includes("document.execCommand('insertText', false, text)"), 'the markers are typed like a keystroke, so the editor keeps them')
 check(clientSource.includes("why: 'dom-fill'"), 'the DOM fallback reports itself')
+check(
+  (clientSource.match(/if \(filled\) void finishRound\(items\)/g) || []).length === 2,
+  'the hero composer ends the round on both the button and Enter',
+)
 check(clientSource.includes("actions.setDraft(cards + (typed ? CARD_BREAK + typed : ''))"), 'nothing is typed on the user’s behalf')
 check(!clientSource.includes('defaultLead'), 'the auto-written prompt is gone')
 check(!clientSource.includes('按这条批注改'), 'the canned sentence is gone')
