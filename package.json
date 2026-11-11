@@ -40,5 +40,14 @@
   "engines": {
     "dsh": ">=0.2.0-rc.2"
   },
+  "author": "kanxue0201",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanxue0201/dsh-element-ref.git"
+  },
+  "homepage": "https://github.com/kanxue0201/dsh-element-ref#readme",
+  "bugs": {
+    "url": "https://github.com/kanxue0201/dsh-element-ref/issues"
+  },
   "license": "MIT"
 }
