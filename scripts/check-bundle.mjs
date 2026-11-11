@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import vm from 'node:vm'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = 'D:/deepseek_harness_project/general/plugins/dsh-element-ref'
+// Resolve from this file, so the repo works wherever it is cloned.
+const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(await readFile(root + '/package.json', 'utf8'))
 console.log('package json ok; exports:', JSON.stringify(pkg.exports), 'client:', JSON.stringify(pkg.dsh && pkg.dsh.client))
 
