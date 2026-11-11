@@ -1,0 +1,5 @@
+# 历史里出现过的身份 -> 统一身份（只影响本机 git log / git shortlog 的显示，
+# GitHub 的 Contributors 是按提交邮箱算的，不受 .mailmap 影响）
+kanxue0201 <1542120178@qq.com>  Elia <1542120178@qq.com>
+kanxue0201 <1542120178@qq.com>  dsh-element-ref <dev@example.com>
+kanxue0201 <1542120178@qq.com>  kanxue0201 <kanxue0201@users.noreply.github.com>
