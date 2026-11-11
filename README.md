@@ -142,15 +142,15 @@ node scripts/check-profile.mjs   # 按 Electron 的方式组合 desktop profile�
 
 ### 下载安装（不 clone 仓库）
 
-从 [Releases](https://github.com/kanxue0201/dsh-element-ref/releases/latest) 下载 dsh-element-ref-0.8.1.zip，
-解压到任意目录，然后在该目录执行：
+从 [Releases](https://github.com/kanxue0201/dsh-element-ref/releases/latest) 下载 `dsh-element-ref-0.8.1.zip`，解压到任意目录，然后在该目录执行：
 
-\\ash
+```bash
 node scripts/install-into-profile.mjs             # 装进默认 desktop profile
 node scripts/install-into-profile.mjs --dry-run   # 先看它会写什么
 node scripts/install-into-profile.mjs --profile <profile 目录>
-\
-它会写 profile 的 \package.json\（\dependencies\ + \dsh.profile.bundles\）并建 ode_modules\ 链接，装完重启一次 DSH。
+```
+
+它会写 profile 的 `package.json`（`dependencies` + `dsh.profile.bundles`）并建 `node_modules` 链接，装完重启一次 DSH。
 
 ### 从本地源码装（开发者）
 
