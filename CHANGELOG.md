@@ -3,6 +3,15 @@
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
+## 0.8.2 — 2026-11-11
+
+### 修：插件一失败就让 DSH 起不来
+
+- 症状：`crash-*-web-boot.log` 里反复出现 `web boot: 1 entry did not activate` / `dsh-element-ref: import failed`，弹窗直接是「应用无法启动」。日志里只有这一句，真正的异常被 loader 吞掉。
+- 原因：`factory()` 第一行就是 `require('react')`，`apply()` 又立刻摸 `ctx.slots` 等服务。这两处只要有一次抛错，web boot 的判定就是「有 entry 没激活」，于是整个应用拒绝启动——而这个面板本来是可选的。
+- 改法：`factory` 与 `apply` 各包一层 `try/catch`。`factory` 抛错时 `console.error` 打出原始堆栈，然后返回一个惰性插件（`apply()` 只打一条 warn），让 DSH 照常启动；`apply` 抛错时同样只记日志、剩下的会话保持禁用。
+- 效果：同样的底层异常以后只会让「元素引用」这一块不可用，不会再拖垮整个应用；并且下一次崩溃日志的 renderer console 里会带上我们打印的真实堆栈。
+
 ## 0.8.1 — 2026-11-11
 
 - 地址行光标按钮只落在真正的浏览器地址行里（行内必须存在 `addressBox`），定时任务等页面的搜索工具条不再被误插；每个 tick 还会把装错位置的历史按钮摘掉。
