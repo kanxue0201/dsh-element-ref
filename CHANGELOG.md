@@ -3,6 +3,21 @@
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
+## 0.8.6 — 2026-11-12
+
+### 改：样式改动从「内联 style」换成「属性 + 运行时样式表」
+
+- 起因：在百度、B 站这类页面里，边框（尤其顶边）怎么都写不进去。回读发现写入后计算值仍是 `0px`，而 `!important` 也没救回来 —— 不是优先级输，是**声明被删**：这些站点的 React/Vue 托管着元素的 `style` 属性，下一次渲染会把整个属性重写成它认为的值。
+- 改法：给元素加一个 `data-element-ref-pin="pN"` 属性，把声明写进 `document` 里的一份 `<style id="element-ref-rules">`：
+
+  ```css
+  :not(#dsh-none):not(#dsh-none):not(#dsh-none):not(#dsh-none)[data-element-ref-pin="p1"][data-element-ref-pin="p1"][data-element-ref-pin="p1"][data-element-ref-pin="p1"] { border-top: 4px solid rgb(51, 51, 51) !important; }
+  ```
+
+  选择器靠重复属性 + 叠 `:not(#…)` 把特异性抬到「四个 ID 权重」，压得住页面的 `#id .cls img` 这类规则；框架只重写 `style`，不会删我们加的属性和这条规则。
+- 连带简化：`restorePreview()` 收起面板时的回滚 = 删掉该元素的规则（原来是把整个 `style` 属性还原成基线，容易和页面自己的改动打架）；`removeMark` / `clearMarks` 同样走 `dropRules()`；撤销（每个框前面的那个按钮）就是删掉对应声明。
+- 预览与调试：「默认」按钮现在只是删掉这一条声明，元素自然回落到页面自己的样式；`borderReport()` 继续每 3 秒回读真实计算值，写给宿主 `border-report` beacon。
+
 ## 0.8.4 — 2026-11-12
 
 ### 修：顶边（或任意一边）改不动

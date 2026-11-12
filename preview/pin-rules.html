@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>属性 + 运行时样式表：压得住页面自己的 !important</title>
+<style>
+  html, body { margin: 0; background: #eef1f6; font: 13px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  body { padding: 24px 28px 28px; }
+  h1 { font-size: 15px; margin: 0 0 4px; color: #111827; }
+  p.note { margin: 0 0 18px; color: #6b7280; }
+  .row { display: flex; gap: 36px; }
+  .col { width: 300px; }
+  .cap { color: #6b7280; margin: 0 0 8px; }
+  .band { background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 6px 18px -12px rgba(15,23,42,.35); }
+  .shot { display: block; width: 280px; height: 120px; border-radius: 8px;
+          background: linear-gradient(135deg, #f97316, #ef4444 45%, #7c3aed); }
+
+  /* --- the page's own reset: this is what beat our inline writes ------------- */
+  .band .shot { border: 0 !important; }
+  .band .shot { border-top: 0 !important; border-left: 0 !important; }
+  #app .band .shot { border-bottom: 0 !important; border-right: 0 !important; }
+
+  /* --- what 0.8.6 writes: attribute + specificity boost + !important -------- */
+  .after [data-element-ref-pin="p1"]:not(#dsh-none):not(#dsh-none):not(#dsh-none):not(#dsh-none)[data-element-ref-pin="p1"][data-element-ref-pin="p1"][data-element-ref-pin="p1"] {
+    border-top: 4px solid #2f6bff !important;
+    border-right: 4px solid #2f6bff !important;
+    border-bottom: 4px solid #2f6bff !important;
+    border-left: 4px solid #2f6bff !important;
+    border-radius: 10px !important;
+  }
+</style>
+</head>
+<body id="app">
+  <h1>为什么 0.8.6 能改、0.8.5 不能</h1>
+  <p class="note">页面用 <code>!important</code> 把四条边全部清零（模拟百度热搜的图片样式）。左边是写内联 style，右边是写「属性 + 运行时样式表」。</p>
+  <div class="row">
+    <div class="col before">
+      <p class="cap">0.8.5：写 <code>el.style.border-top</code></p>
+      <div class="band"><div class="shot"></div></div>
+    </div>
+    <div class="col after">
+      <p class="cap">0.8.6：写 <code>[data-element-ref-pin]</code> 规则</p>
+      <div class="band"><div class="shot" data-element-ref-pin="p1"></div></div>
+    </div>
+  </div>
+</body>
+</html>

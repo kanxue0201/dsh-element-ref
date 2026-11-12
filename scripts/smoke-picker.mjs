@@ -153,6 +153,33 @@ documentNode.createElementNS = (namespace, tag) => makeNode(tag)
 documentNode.querySelectorAll = () => []
 documentNode.querySelector = () => null
 documentNode.elementFromPoint = () => null
+// The picker keeps its declarations in a runtime <style>; the harness only needs a box
+// that remembers textContent so assertions can read the generated rule text.
+const ruleNodes = new Map()
+documentNode.head = makeNode('head')
+html.appendChild(documentNode.head)
+documentNode.getElementById = (id) => ruleNodes.get(id) || null
+const createElementBase = documentNode.createElement
+documentNode.createElement = (tag) => {
+  const node = createElementBase(tag)
+  if (String(tag).toLowerCase() === 'style') {
+    node.textContent = ''
+    node._id = ''
+    Object.defineProperty(node, 'id', {
+      get() { return node._id },
+      set(value) { node._id = value; ruleNodes.set(value, node) },
+    })
+    const setAttributeBase = node.setAttribute
+    node.setAttribute = (name, value) => {
+      setAttributeBase(name, value)
+      if (name === 'id') { node._id = value; ruleNodes.set(value, node) }
+    }
+  }
+  return node
+}
+
+// Everything the panel writes now lands in the runtime stylesheet, so read that.
+const cssText = () => String((documentNode.getElementById('element-ref-rules') || {}).textContent || '')
 
 const windowListeners = {}
 const fakeWindow = {
@@ -378,13 +405,13 @@ const colorRow = rows.find((row) => row.children[0].textContent === '文本颜�
 const colorInput = colorRow.children[1].children[0].children[1]
 colorInput.value = '#ff0000'
 fire(colorInput, 'input', { target: colorInput })
-check(paragraph.style._store.color === '#ff0000', 'a panel edit previews on the page', paragraph.style._store.color)
+check(cssText().indexOf('color:#ff0000') !== -1, 'a panel edit previews on the page', cssText())
 
 const radiusRow = rows.find((row) => row.children[0].textContent === '边框圆角')
 const radiusInput = radiusRow.children[1].children[0].children[0]
 radiusInput.value = '12'
 fire(radiusInput, 'input', { target: radiusInput })
-check(paragraph.style._store['border-radius'] === '12px', 'length edits get px', paragraph.style._store['border-radius'])
+check(cssText().indexOf('border-radius:12px') !== -1, 'length edits get px', cssText())
 // Undo: the row only grows a revert button after it changes, and pressing it puts the page's
 // own value back instead of leaving a zero behind.
 const radiusCtl = radiusRow.children[1]
@@ -408,10 +435,10 @@ check(padUndo.style.display === 'none', 'an untouched side keeps it hidden', Str
 const padInput = padBox.children[0]
 padInput.value = '24'
 fire(padInput, 'input', { target: padInput })
-check(paragraph.style._store.padding === '24px 0px 0px 0px', 'a side writes the shorthand', String(paragraph.style._store.padding))
+check(cssText().indexOf('padding:24px 0px 0px 0px') !== -1, 'a side writes the shorthand', cssText())
 check(padUndo.style.display === 'flex', 'a changed side shows its undo', String(padUndo.style.display))
 fire(padUndo, 'click')
-check(paragraph.style._store.padding === undefined, 'undoing a side clears the shorthand', String(paragraph.style._store.padding))
+check(cssText().indexOf('padding:') === -1, 'undoing a side clears the shorthand', cssText())
 check(padUndo.style.display === 'none', 'the side undo hides again', String(padUndo.style.display))
 check(source.indexOf('function restorePreview') !== -1, 'folding the panel rolls the preview back')
 check(source.indexOf('restorePreview(badge)') !== -1, 'the badge folds with a rollback')
@@ -511,7 +538,7 @@ check(byText('保存')[0].style.display !== 'none', 'clearing the text keeps sav
 check(source.includes('else mark.adjustments[label] = raw'), 'a cleared copy stays in the adjustments')
 textInput.value = 'Elia 2'
 fire(textInput, 'input', { target: textInput })
-check(second.style._store.color === '#00ff00', 'the panel previews before cancelling', second.style._store.color)
+check(cssText().indexOf('color:#00ff00') !== -1, 'the panel previews before cancelling', cssText())
 const secondRemove = second.removeChild
 let removedByPanel = false
 second.removeChild = function patched(node) { removedByPanel = true; return secondRemove.call(this, node) }

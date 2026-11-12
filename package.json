@@ -1,6 +1,6 @@
 {
   "name": "dsh-element-ref",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "元素引用：在浏览器里点选页面元素，写一句要改什么，发送后模型按这处上下文改代码。",
   "type": "module",
   "main": "lib/index.js",
