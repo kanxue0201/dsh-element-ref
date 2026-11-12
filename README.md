@@ -44,7 +44,7 @@
 
 ### 用 Release 里的 zip（推荐）
 
-1. 下载本仓库最新 Release 的 `dsh-element-ref-<版本>.zip`，解压到任意目录（不必是工作区）。
+1. 下载本仓库最新 Release 的 `dsh-element-ref-<版本>.zip`（当前 [v0.9.1](https://github.com/kanxue0201/dsh-element-ref/releases/tag/v0.9.1)），解压到任意目录（不必是工作区）。
 2. 在解压目录执行：
 
    ```bash
@@ -131,17 +131,38 @@ node scripts/install-into-profile.mjs
 - **页面半**（`lib/picker.js`）：注入页面的 IIFE，负责高亮、编号、气泡、样式面板与取色弹层；版本号与宿主协商，旧版本会自动升级。
 - 插件不调用模型、不改你的代码：它只把「这一个元素」变成结构化上下文，交给普通对话。
 
-### 改文件请用原子写
+### 改文件会影响正在运行的应用
+
+`lib/*.js` 一变，DSH 立刻热重载；如果那一刻文件是半截的（普通「截断再写」就是这样），
+导入器会抛 `SyntaxError`，而模块求值阶段的异常插件无法自己捕获，整个 web boot 会报
+`1 entry did not activate`。本仓库因此提供了 `scripts/apply-edit.mjs`（见下），发布流程里也用它。
+
+### 改文件请走 `apply-edit`
 
 DSH 会在文件一变就热重载 `lib/*.js`。普通的"先截断再写"会让导入器读到**半个 bundle**，抛出
 `SyntaxError`——而模块求值阶段的异常没法被 `try/catch` 兜住，结果就是整个 web boot 报
-`1 entry did not activate`。因此本仓库的文件改动建议走：
+`1 entry did not activate`。
+
+`apply-edit` 把顺序改成「先验证、再替换」，监听器只看得到通过检查的完整文件：
 
 ```bash
-node scripts/write-atomic.mjs lib/picker.js   # 从 stdin 读，写临时文件再 rename
+node scripts/apply-edit.mjs lib/picker.js --source 新版本.js --port <GUI 端口>
+echo '...' | node scripts/apply-edit.mjs README.md --no-wait      # 非代码文件
+node scripts/apply-edit.mjs lib/picker.js --source 草稿.js --dry   # 只验证不落盘
 ```
 
-`rename` 在 NTFS 与 POSIX 上都是原子的，读到的要么是旧文件、要么是新文件。
+它做的事：
+
+1. 内容先写进同目录的 `.apply-edit.<pid>.<文件名>`；
+2. `.js` 跑 `node --check`、`.json` 跑 `JSON.parse`、`.yml` 做基本体检，版本号还要对齐
+   （`lib/client.js` 的 `PICKER_API` 必须等于 `lib/picker.js` 的 `version`）；`--smoke` 会额外跑三套 smoke；
+3. 全部通过才 `rename` 覆盖目标（NTFS/POSIX 都原子），失败则删临时文件、**原文件一个字节不动**；
+4. 有 `--port` 时轮询 `/element-ref/debug`，等一条带新版本号的 beacon，10 秒内没等到就退出码 3 并给回滚命令；
+5. 改到 `lib/index.js`（宿主半）会提醒你它不热更，需要 `plugin_manager set_bundle` 关→开。
+
+顺便挡掉两个常见坑：UTF-16 内容（PowerShell 的 `>` / `Out-File` 默认编码）会被拒绝并提示，UTF-8 BOM 会被自动去掉。
+
+底层原语是 `scripts/write-atomic.mjs`（只做原子写、不验证），需要时单独用。
 
 ## 开发与测试
 

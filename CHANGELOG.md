@@ -1,9 +1,24 @@
+## 0.9.1 — 2026-11-12
+
+### 新增：`scripts/apply-edit.mjs`（改文件的安全通道）
+
+- 顺序改成「先验证、再原子替换」：内容先落在同目录临时文件，跑 `node --check` / `JSON.parse` /
+  版本号一致性检查（必要时 `--smoke`），通过后才 `rename` 覆盖目标，失败则原文件不动。
+- 带 `--port` 时会等 `/element-ref/debug` 出现新版本 beacon，确认热重载真的换上了；等不到返回退出码 3。
+- 拒绝 UTF-16 内容、自动去掉 UTF-8 BOM（两者都会让 `node --check` / `JSON.parse` 报错）。
+- 背景见 0.9.1：热重载读到半截文件会让整个 web boot 失败，而模块求值阶段的异常插件兜不住。
+
 # 更新日志
 
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
-## 0.9.1 — 2026-11-12
+### 上架 DSH-Store
+
+- 插件在 [DSH-Store](https://github.com/AI-Scarlett/DSH-Store) 的提交 Issue：[#1870](https://github.com/AI-Scarlett/DSH-Store/issues/1870)（首版提交时固定的是 `5725003` / v0.8.2，本版起改为 `HEAD`）。
+- 前置检查（`plugin-submission` workflow）每次都通过：固定来源读取、`package.json` 解析、Bundle Patch、入口 ID、生命周期脚本「无」、启发式扫描 0 条告警。
+- 自动准入会被 `registry/automation-policy.json` 的 `automaticApproval.permissionSignals` 挡住：本插件必然触发 `files`（元素截图写 `%TEMP%\dsh-element-ref-shots\*.png`）与 `network`（本机回环路由），两项要求都是 `false` 才自动通过，因此只能等人工复核写进 `admission-reviews.json`，之后由每 8 小时的 Catalog 批次收录。
+- 期间该仓库的「打标签 / 发评论」workflow 自 13:33Z 起持续失败，所以 Issue 上没有机器人评论，但检查本身是成功的——以 workflow run 的结论为准。
 
 ### 修：热重载读到半个文件导致的启动失败
 
