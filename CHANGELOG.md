@@ -3,6 +3,15 @@
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
+## 0.8.4 — 2026-11-12
+
+### 修：顶边（或任意一边）改不动
+
+- 回读确认过：写入 `border-top-width: 4px !important` 之后，这一边的计算值仍是 `0px` —— 说明站点不是用长属性（`border-top-width`）锁的，而是用**单边简写** `border-top: 0 !important`（或内联变量）在压。
+- 改法：`forceBorder()` 除了四个长属性，再按边写入简写 `border-top / border-right / border-bottom / border-left: <宽度> solid <颜色>`，同样带 `!important`；清空与撤销由新增的 `clearBorder()` 把这些简写连同长属性一起还原。
+- 锁定判定改到**下一帧**（`requestAnimationFrame`）再读：站点可能在自家渲染里把我们刚写的声明改回去，同步读取会「假成功」；现在只在「请求值 > 0 且下一帧回读仍是 0」时提示，且每条边每个值只提示一次。
+- trace 增加 `border-locked`（`want / applied / style / style 属性尾部`），从 `/element-ref/debug` 能分清是「被样式锁死」还是「被上层元素遮住」。
+
 ## 0.8.3 — 2026-11-12
 
 ### 修：改边框时连弹三条「被页面样式锁住了」
