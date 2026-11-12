@@ -3,6 +3,16 @@
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
+## 0.8.7 — 2026-11-12
+
+### 改：边框回到页面里，但标注不再钉在原地
+
+- **边框真实写入页面**：`边框宽度 / 边框颜色` 重新走 `border-*` 声明（`data-element-ref-pin` 属性 + `#element-ref-rules` 运行时样式表，`!important`），圆角本来就一直真写。这样你在面板里调 45px 边框，页面看到的就是最终状态。
+- 代价（有意接受）：`content-box` 下边框会把盒子撑大 2×宽度，父级 `overflow:hidden` 时外扩的那条边可能被裁掉；`<img>` 带 `max-width:100%` 时内容会略缩。这是"预览即最终"的必然结果，不再用覆盖层假装。
+- **标注跟随滚动**：拾取模式关掉之后，编号仍然每 300ms 重算 `getBoundingClientRect`（`layout()` 的守卫从 `!active` 改成 `!active && marks.length === 0`），页面滚动、窗口缩放时不会再钉在旧坐标上。
+- 版本：`0.8.6` → `0.8.7`；页面脚本 `picker 88` → `90`。
+- 未进入本版：`box-shadow` 环与覆盖层画框（`.ring` + rAF 跟踪）留在分支 `wip/border-overlay`。
+
 ## 0.8.6 — 2026-11-12
 
 ### 改：样式改动从「内联 style」换成「属性 + 运行时样式表」

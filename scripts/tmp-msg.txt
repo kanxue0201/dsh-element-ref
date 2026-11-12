@@ -1,0 +1,30 @@
+feat(border): 边框写回页面 + 拾取关掉后标注继续跟随（picker 90，0.8.7）
+
+边框方案定为「真实写入页面」，不再用覆盖层假装：
+
+- border-width / border-color 通过 `data-element-ref-pin="pN"` 属性 +
+  `#element-ref-rules` 运行时样式表落地（每条声明 !important），
+  能压过站点的重置规则；圆角一直真写。
+- 保留 position:relative + z-index:5，避免边框被兄弟元素遮挡。
+- 已知且有意接受的代价：content-box 下边框把盒子撑大 2×宽度，
+  父级 overflow:hidden 时外扩的那条边可能被裁；<img> 带 max-width:100%
+  时内容略缩 —— 换来「面板里看到的就是页面最终状态」。
+
+顺带修掉一个与边框方案无关的冻结问题：
+
+- layout() 的守卫从 `if (!active) return` 改成
+  `if (!active && marks.length === 0) return`，拾取开关关掉之后，
+  已有标注仍每 300ms 重算 getBoundingClientRect，
+  滚动/缩放时编号不再钉在旧坐标上。
+
+版本与元数据：
+
+- package.json 0.8.6 → 0.8.7；lib/client.js VERSION 同步。
+- picker 88 → 90；client 的 PICKER_API 同步，旧页面自动重注入。
+- CHANGELOG 增加 0.8.7 段落（边框回页面、跟随滚动、以及被排除的替代方案）。
+
+未进入本版：box-shadow 环与覆盖层画框（.ring + rAF 跟踪），
+保留在本地分支 wip/border-overlay，随时可回。
+
+验证：node --check 两个文件通过；check-bundle.mjs 通过；
+npm run smoke 三套全绿（host / interface / annotation picker）。
