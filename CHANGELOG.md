@@ -3,6 +3,17 @@
 本文件记录用户可见的改动。版本号同时写在 `package.json` 的 `version` 与 `lib/client.js` 的 `VERSION`
 （后者是应用里报出来的那个，改动时两边一起抬）。
 
+## 0.9.1 — 2026-11-12
+
+### 修：热重载读到半个文件导致的启动失败
+
+- 现象：改动 `lib/*.js` 后应用偶发弹「应用无法启动或已意外停止 / web boot: 1 entry did not activate /
+  dsh-element-ref: import failed」，重启后又正常。
+- 原因：DSH 的文件监听在写入过程中就触发了热重载，导入器读到了被截断的文件；模块**求值阶段**的
+  `SyntaxError` 无法被插件自己的 `try/catch` 捕获（0.8.2 的 fail-soft 只能兜住 `factory`/`apply` 里的异常）。
+- 处理：新增 `scripts/write-atomic.mjs`（写临时文件再 `rename`，读到的永远是完整文件），并在 README
+  的开发章节写明这条约定；`lib/` 下的代码本身无需改动。
+
 ## 0.9.0 — 2026-11-12
 
 ### 改：边框回到页面里，但标注不再钉在原地

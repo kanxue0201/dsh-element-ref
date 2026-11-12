@@ -131,6 +131,18 @@ node scripts/install-into-profile.mjs
 - **页面半**（`lib/picker.js`）：注入页面的 IIFE，负责高亮、编号、气泡、样式面板与取色弹层；版本号与宿主协商，旧版本会自动升级。
 - 插件不调用模型、不改你的代码：它只把「这一个元素」变成结构化上下文，交给普通对话。
 
+### 改文件请用原子写
+
+DSH 会在文件一变就热重载 `lib/*.js`。普通的"先截断再写"会让导入器读到**半个 bundle**，抛出
+`SyntaxError`——而模块求值阶段的异常没法被 `try/catch` 兜住，结果就是整个 web boot 报
+`1 entry did not activate`。因此本仓库的文件改动建议走：
+
+```bash
+node scripts/write-atomic.mjs lib/picker.js   # 从 stdin 读，写临时文件再 rename
+```
+
+`rename` 在 NTFS 与 POSIX 上都是原子的，读到的要么是旧文件、要么是新文件。
+
 ## 开发与测试
 
 ```bash
