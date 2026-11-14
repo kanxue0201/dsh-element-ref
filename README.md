@@ -1,3 +1,5 @@
+<img width="2030" height="1636" alt="全局效果展示" src="https://github.com/user-attachments/assets/85bae58c-4ccb-4f61-8e8a-7d1a095e7bb3" />
+
 # dsh-element-ref · 元素引用
 
 **在 DSH 右栏浏览器里点一下网页元素，把「改哪里、改成什么」直接交给模型。**
